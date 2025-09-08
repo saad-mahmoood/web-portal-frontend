@@ -7,10 +7,12 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string, rememberMe?: boolean) => Promise<{ success: boolean; message: string }>;
+  login: (loginData: any) => Promise<{ success: boolean; message: string; requiresTwoFactor?: boolean }>;
   signup: (userData: any) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
   forgotPassword: (email: string) => Promise<{ success: boolean; message: string }>;
+  updateProfile: (data: any) => Promise<{ success: boolean; message: string }>;
+  changePassword: (data: any) => Promise<{ success: boolean; message: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -56,19 +58,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const login = async (email: string, password: string, rememberMe = false) => {
+  const login = async (loginData: any) => {
     try {
-      const response = await apiService.login({ email, password, rememberMe });
+      const response = await apiService.login(loginData);
       
       if (response.success && response.data) {
         const { token: authToken, user: userData } = response.data;
         setToken(authToken);
         setUser(userData);
         // Store token with proper expiration and remember me preference
-        tokenService.setToken(authToken, 3600, rememberMe); // 1 hour default
+        tokenService.setToken(authToken, 3600, loginData.rememberMe); // 1 hour default
         return { success: true, message: response.message };
       } else {
-        return { success: false, message: response.message };
+        return { 
+          success: false, 
+          message: response.message,
+          requiresTwoFactor: (response as any).requiresTwoFactor 
+        };
       }
     } catch (error) {
       return { success: false, message: 'An unexpected error occurred' };
@@ -102,6 +108,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const updateProfile = async (data: any) => {
+    if (!token) return { success: false, message: 'Not authenticated' };
+    
+    try {
+      const response = await apiService.updateProfile(data, token);
+      if (response.success && response.data) {
+        setUser(response.data.user);
+      }
+      return { success: response.success, message: response.message };
+    } catch (error) {
+      return { success: false, message: 'An unexpected error occurred' };
+    }
+  };
+
+  const changePassword = async (data: any) => {
+    if (!token) return { success: false, message: 'Not authenticated' };
+    
+    try {
+      const response = await apiService.changePassword(data, token);
+      return { success: response.success, message: response.message };
+    } catch (error) {
+      return { success: false, message: 'An unexpected error occurred' };
+    }
+  };
   const value = {
     user,
     token,
@@ -111,6 +141,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     signup,
     logout,
     forgotPassword,
+    updateProfile,
+    changePassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

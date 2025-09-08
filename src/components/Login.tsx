@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, ArrowLeft, CheckCircle, Shield } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import AuthLayout from './AuthLayout';
 import NotificationToast from './NotificationToast';
@@ -16,18 +16,33 @@ const Login: React.FC = () => {
     email: '',
     password: '',
     rememberMe: false,
+    twoFactorToken: '',
+    backupCode: '',
   });
+  const [requiresTwoFactor, setRequiresTwoFactor] = useState(false);
+  const [showBackupCode, setShowBackupCode] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const result = await login(formData.email, formData.password, formData.rememberMe);
+      const loginData = {
+        email: formData.email,
+        password: formData.password,
+        rememberMe: formData.rememberMe,
+        ...(formData.twoFactorToken && { twoFactorToken: formData.twoFactorToken }),
+        ...(formData.backupCode && { backupCode: formData.backupCode }),
+      };
+      
+      const result = await login(loginData);
       
       if (result.success) {
         showSuccess('Welcome back!', 'You have been successfully signed in.');
         navigate('/dashboard'); // Redirect to dashboard or home page
+      } else if (result.requiresTwoFactor) {
+        setRequiresTwoFactor(true);
+        showInfo('2FA Required', 'Please enter your 2FA token to continue.');
       } else {
         showError('Sign In Failed', result.message);
       }
@@ -193,6 +208,69 @@ const Login: React.FC = () => {
                   </button>
                 </div>
               </div>
+
+              {requiresTwoFactor && (
+                <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center gap-2 text-blue-800">
+                    <Shield size={20} />
+                    <span className="font-medium">Two-Factor Authentication Required</span>
+                  </div>
+                  
+                  {!showBackupCode ? (
+                    <div>
+                      <label
+                        htmlFor="twoFactorToken"
+                        className="block text-sm font-medium text-gray-500 mb-1"
+                      >
+                        Enter 6-digit code from your authenticator app
+                      </label>
+                      <input
+                        id="twoFactorToken"
+                        name="twoFactorToken"
+                        type="text"
+                        maxLength={6}
+                        value={formData.twoFactorToken}
+                        onChange={handleChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-yellow-400 focus:border-yellow-200 transition-colors text-center text-lg tracking-widest"
+                        placeholder="000000"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowBackupCode(true)}
+                        className="text-sm text-blue-600 hover:text-blue-500 mt-2"
+                      >
+                        Use backup code instead
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <label
+                        htmlFor="backupCode"
+                        className="block text-sm font-medium text-gray-500 mb-1"
+                      >
+                        Enter backup code
+                      </label>
+                      <input
+                        id="backupCode"
+                        name="backupCode"
+                        type="text"
+                        maxLength={8}
+                        value={formData.backupCode}
+                        onChange={handleChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-yellow-400 focus:border-yellow-200 transition-colors text-center text-lg tracking-widest"
+                        placeholder="XXXXXXXX"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowBackupCode(false)}
+                        className="text-sm text-blue-600 hover:text-blue-500 mt-2"
+                      >
+                        Use authenticator code instead
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center">

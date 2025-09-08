@@ -15,6 +15,7 @@ export interface User {
   company: string;
   role: string;
   isEmailVerified: boolean;
+  twoFactorEnabled?: boolean;
   lastLogin?: string;
   lastLoginIP?: string;
 }
@@ -37,6 +38,33 @@ export interface SignupRequest {
 
 export interface ForgotPasswordRequest {
   email: string;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface Setup2FAResponse {
+  secret: string;
+  qrCode: string;
+  manualEntryKey: string;
+}
+
+export interface Verify2FARequest {
+  token: string;
+}
+
+export interface Disable2FARequest {
+  password: string;
+  token?: string;
+  backupCode?: string;
+}
+
+export interface BackupCodesRequest {
+  password: string;
+  token?: string;
+  backupCode?: string;
 }
 
 class ApiService {
@@ -168,6 +196,74 @@ class ApiService {
   async checkDomain(domain: string): Promise<ApiResponse<{ isAllowed: boolean; company: any }>> {
     return this.makeRequest(`/company/check-domain/${domain}`, {
       method: 'GET',
+    });
+  }
+
+  // User profile endpoints
+  async updateProfile(data: { firstName?: string; lastName?: string; company?: string }, token: string): Promise<ApiResponse<{ user: User }>> {
+    return this.makeRequest('/user/profile', {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+  }
+
+  async changePassword(data: ChangePasswordRequest, token: string): Promise<ApiResponse> {
+    return this.makeRequest('/user/change-password', {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+  }
+
+  // 2FA endpoints
+  async setup2FA(token: string): Promise<ApiResponse<Setup2FAResponse>> {
+    return this.makeRequest('/auth/setup-2fa', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  }
+
+  async verify2FA(data: Verify2FARequest, token: string): Promise<ApiResponse<{ backupCodes: string[] }>> {
+    return this.makeRequest('/auth/verify-2fa', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+  }
+
+  async disable2FA(data: Disable2FARequest, token: string): Promise<ApiResponse> {
+    return this.makeRequest('/auth/disable-2fa', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+  }
+
+  async generateBackupCodes(data: BackupCodesRequest, token: string): Promise<ApiResponse<{ backupCodes: string[] }>> {
+    return this.makeRequest('/auth/generate-backup-codes', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+  }
+
+  async validateEmail(email: string): Promise<ApiResponse<{ valid: boolean; reason: string }>> {
+    return this.makeRequest('/auth/validate-email', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
     });
   }
 }

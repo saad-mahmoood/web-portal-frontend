@@ -54,10 +54,10 @@ const Signup: React.FC = () => {
       
       if (result.success) {
         showSuccess('Account Created!', result.message);
-        // Optionally redirect to login page after a delay
+        // Redirect to login page after a delay
         setTimeout(() => {
           navigate('/login');
-        }, 3000);
+        }, 2000);
       } else {
         showError('Registration Failed', result.message);
       }
