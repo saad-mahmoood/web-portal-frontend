@@ -374,6 +374,15 @@ class ApiService {
 
   // Charts endpoints
   async getDeviceChartData(deviceId: string, timeRange: string = 'day', token: string): Promise<ApiResponse<DeviceChartData>> {
+    // Ensure deviceId is a valid number string
+    const numericDeviceId = parseInt(deviceId);
+    if (isNaN(numericDeviceId)) {
+      return {
+        success: false,
+        message: 'Invalid device ID provided'
+      };
+    }
+    
     return this.makeRequest(`/charts/device/${deviceId}?timeRange=${timeRange}`, {
       method: 'GET',
       headers: {
@@ -383,6 +392,15 @@ class ApiService {
   }
 
   async getHierarchyChartData(hierarchyId: string, timeRange: string = 'day', token: string): Promise<ApiResponse<HierarchyChartData>> {
+    // Ensure hierarchyId is a valid number string
+    const numericHierarchyId = parseInt(hierarchyId);
+    if (isNaN(numericHierarchyId)) {
+      return {
+        success: false,
+        message: 'Invalid hierarchy ID provided'
+      };
+    }
+    
     return this.makeRequest(`/charts/hierarchy/${hierarchyId}?timeRange=${timeRange}`, {
       method: 'GET',
       headers: {

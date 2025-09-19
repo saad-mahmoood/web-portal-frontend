@@ -105,7 +105,12 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
 
   const handleHierarchyClick = (hierarchy: HierarchyNode) => {
     if (onHierarchySelect) {
-      onHierarchySelect(hierarchy);
+      // Ensure the hierarchy ID is properly set as a string
+      const hierarchyWithStringId = {
+        ...hierarchy,
+        id: String(hierarchy.id)
+      };
+      onHierarchySelect(hierarchyWithStringId);
     }
   };
 
